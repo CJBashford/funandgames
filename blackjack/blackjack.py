@@ -73,6 +73,22 @@ class Player:
         minimum_bet = 2
         maximum_bet = 500
         
+
+        while True:
+                print("Would you like to play with high or low stakes?")
+                stakes = input("High or Low Stakes (y/n): ").upper()
+                if stakes not in ["Y","N"]:
+                    print("Invalid input")
+                    continue
+                elif stakes == 'Y':
+                    minimum_bet = 100
+                    maximum_bet = 1000
+                    print("High stakes chosen. Minimum bet per hand is now 100, maximum bet per hand is now 1000.")
+                    break
+                else:
+                    print("Low stakes chosen. Minimum bet per hand remains at 2, maximum bet per hand remains at 500")
+                    break
+
         while True:
             try:
                 print("Your balance is:", self.balance)
@@ -324,18 +340,29 @@ def blackjack():
         stick_or_twist()
         
         gambler.show_score()
-        dealer.show_hand()
-        dealer.show_score()
+        if gambler.score > 21:
+            endgame()
+        else:
+            dealer.show_hand()
+            dealer.show_score()
         
         while dealer.score < 17:
+            if dealer.score > gambler.score:
+                break
             dealer.dealer_draw()
             dealer.show_hand()
         
-        if 17 <= dealer.score <= 21:
-            print(f"{dealer.name} must stand. {dealer.name}\'s final score is: {dealer.score}")
-        else:
-            print(f"{dealer.name} is bust. {dealer.name}\'s final score is: {dealer.score}")
+            if 17 <= dealer.score <= 21:
+                print(f"{dealer.name} must stand. {dealer.name}\'s final score is: {dealer.score}")
+            elif dealer.score > 21:
+                print(f"{dealer.name} is bust. {dealer.name}\'s final score is: {dealer.score}")
+            else:
+                continue
         endgame()
-        play_again = input("Would you like to play another hand? Enter y to play again ")
+        if gambler.balance == 0:
+            print("Out of money, game over!")
+            play_again = "n"
+        else:
+            play_again = input("Would you like to play another hand? Enter y to play again ")
 
 blackjack()
