@@ -1,6 +1,8 @@
 import random
 from IPython.display import clear_output
 
+
+
 cards = {'Ace of Spades': 11, '2 of Spades': 2, '3 of Spades': 3, '4 of Spades': 4, '5 of Spades': 5, '6 of Spades': 6, 
         '7 of Spades': 7, '8 of Spades': 8, '9 of Spades': 9, '10 of Spades': 10, 'Jack of Spades': 10, 'Queen of Spades': 10,
        'King of Spades': 10,
@@ -17,14 +19,20 @@ cards = {'Ace of Spades': 11, '2 of Spades': 2, '3 of Spades': 3, '4 of Spades':
         '7 of Clubs': 7, '8 of Clubs': 8, '9 of Clubs': 9, '10 of Clubs': 10, 'Jack of Clubs': 10, 'Queen of Clubs': 10,
        'King of Clubs': 10}
 
+
+
 class Player:
     
+
+
     def __init__(self, name):
         self.name = name
         self.hand = []
         self.balance = 1000
         self.score = 0
     
+
+
     def reset(self):
         
         """
@@ -36,6 +44,8 @@ class Player:
         self.hand = []
         self.score = 0
     
+
+
     def show_hand(self):
         
         """
@@ -46,6 +56,8 @@ class Player:
         
         print(f"{self.name}\'s hand is: {self.hand}")
     
+
+
     def draw_card(self):
         
         """
@@ -59,6 +71,8 @@ class Player:
         print(f"{self.name} drew the {self.hand[-1]}")
         self.show_hand()
     
+
+
     def place_wager(self):
         
         """
@@ -110,7 +124,9 @@ class Player:
         pot += wager
         print("The pot this round is now:", pot)
         return wager
-             
+    
+
+
     def compute_score(self):
         
         """
@@ -134,6 +150,8 @@ class Player:
             self.score -= 10
         return self.score
     
+
+
     def show_score(self):
         
         """
@@ -147,11 +165,16 @@ class Player:
     def __str__(self):
         return self.name
 
+
+
 class Dealer(Player):
     
     def __init__(self, name):
         super().__init__(name)
+        self.balance = 5000
     
+
+
     def dealer_draw(self):
         """
 
@@ -164,6 +187,8 @@ class Dealer(Player):
         self.compute_score()
         print(f"{self.name}\'s score is: {self.score}")
     
+
+
     def show_partial_hand(self):
         
         """
@@ -174,6 +199,8 @@ class Dealer(Player):
         
         print(f"{self.name}\'s hand is: {self.hand[:-1]} + ???")
     
+
+
     def compute_partial_score(self):
         
         """
@@ -187,8 +214,12 @@ class Dealer(Player):
         dealer_hidden_score = dealer_score - dealer_hidden_card_val
         print(f"{self.name}\'s score is: {dealer_hidden_score} + ???")
 
+
+
 gambler = Player('Connor')
 dealer = Dealer('Dealer')
+
+
 
 def empty_pot():
     
@@ -201,6 +232,8 @@ def empty_pot():
     global pot
     pot = 0
 
+
+
 def create_deck():
     
     """
@@ -211,6 +244,8 @@ def create_deck():
     
     global deck
     deck = list(cards.keys())
+
+
 
 def deal():
     
@@ -233,6 +268,8 @@ def deal():
         deck.pop()
         counter += 1
 
+
+
 def stick_or_twist():
     
     """
@@ -251,25 +288,38 @@ def stick_or_twist():
             gambler.show_score()
             dealer.show_hand()
             dealer.show_score()
-            if dealer.score < 17:
-                dealer.dealer_draw()
-                dealer.show_hand()
             if gambler.score == 21:
                 print(f"{gambler.name} got a blackjack!")
                 break
             elif gambler.score > 21:
                 print(f"{gambler.name} is bust!")
                 break
-            elif dealer.score > 21 and gambler.score <= 21:
-                print(f"{dealer.name} is bust!")
-                break
-            elif dealer.score >= 17 and gambler.score > dealer.score:
-                break
             else:
-                pass
-            choice = input("stick or twist? ")
+                choice = input("stick or twist? ")          
 
-def jackpot():
+
+
+def dealer_play():
+
+    """
+
+    Determines the action the dealer takes after the player is finished.
+
+    """
+
+    while dealer.score < 17:
+        dealer.dealer_draw()
+        dealer.show_hand()
+    if dealer.score > 21:
+        print(f"{dealer.name} is bust!")
+    elif dealer.score >= 17 and dealer.score <= 21:
+        print(f"{dealer.name} must stand.")
+    else:
+        pass
+
+
+
+def jackpot(result):
     
     """
     
@@ -277,39 +327,95 @@ def jackpot():
     
     """
     
-    print("You win! Congratulations!")
-    global pot
-    dealer.balance -= pot
-    pot = pot * 2
-    gambler.balance += pot
-    print(f"Your balance is now {gambler.balance}")
-    print(f"The house balance is now {dealer.balance}")
+    if result == "blackjack":
+        print("BLACKJACK!!!!! You win! Congratulations!")
+        global pot
+        dealer.balance -= pot
+        pot = pot * 2
+        gambler.balance += pot
+        print(f"Your balance is now {gambler.balance}")
+        print(f"The house balance is now {dealer.balance}")
+    elif result == "dealer bust":
+        print("The dealer is bust but you are not! You win! Congratulations!")
+        dealer.balance -= pot
+        pot = pot * 2
+        gambler.balance += pot
+        print(f"Your balance is now {gambler.balance}")
+        print(f"The house balance is now {dealer.balance}")
+    elif result == "closest wins":
+        print("You were closer to 21 than the dealer! You win! Congratulations!")
+        dealer.balance -= pot
+        pot = pot * 2
+        gambler.balance += pot
+        print(f"Your balance is now {gambler.balance}")
+        print(f"The house balance is now {dealer.balance}")
+    else:
+        pass
+    empty_pot()
 
-def endgame():
-    if 21 - gambler.score < 0: # you are bust, house always wins
+
+
+def loss(result):
+
+    """
+    
+    Handles endgame scenario where player loses
+
+    """
+
+    if result == "bust":
+        # You are bust, house always wins
         print("Bust! You lose! House wins.")
         dealer.balance += pot
         print(f"Your balance is now {gambler.balance}")
         print(f"The house balance is now {dealer.balance}")
-
-    elif 21 - gambler.score >= 0 and 21 - dealer.score < 0: # you are not bust, house is bust, you win
-        print("The dealer is bust!")
-        jackpot()
-
-    elif 21 - gambler.score < 21 - dealer.score: # neither is bust, but you are closer than dealer
-        print("You were closer to 21 than the dealer!")
-        jackpot()
-
-    elif 21 - gambler.score > 21 - dealer.score: # neither is bust, but dealer is closer than you
+    elif result == "close but no cigar":
+        # Neither is bust, but dealer is closer than you
         print("You lose! The dealer was closer to 21 than you. House wins.")
         dealer.balance += pot
         print(f"Your balance is now {gambler.balance}")
         print(f"The house balance is now {dealer.balance}")
-
-    else:
+    elif result == "push":
+        # Bet ends in a push
         print("Bet ends in a push. Bets will be refunded. No action this round.") # your score is tied with the dealer
         gambler.balance += pot
         print(f"Your balance is now {gambler.balance}")
+    else:
+        pass
+    empty_pot()
+
+
+
+def endgame():
+
+    """
+    
+    Handles the endgame scenarios and triggers jackpot or loss scenarios based on the outcome of the game.
+
+    """
+
+    print(f"Your final score is {gambler.score}. Dealer's final score is {dealer.score}.")
+
+    if gambler.score == 21 and dealer.score != 21:
+        result = "blackjack"
+        jackpot(result)
+    elif 21 - gambler.score < 0: # you are bust, house always wins
+        result = "bust"
+        loss(result)
+    elif 21 - gambler.score >= 0 and 21 - dealer.score < 0: # you are not bust, house is bust, you win
+        result = "dealer bust"
+        jackpot(result)
+    elif 21 - gambler.score < 21 - dealer.score: # neither is bust, but you are closer than dealer
+        result = "closest wins"
+        jackpot(result)
+    elif 21 - gambler.score > 21 - dealer.score: # neither is bust, but dealer is closer than you
+        result = "close but no cigar"
+        loss(result)
+    else:
+        result = "push"
+        loss(result)
+
+
 
 def blackjack():
     
@@ -319,6 +425,7 @@ def blackjack():
     hand, the deck has 10 or less cards remaining, the deck is rebuilt and a new pack of 52 cards used.
     
     """
+
     create_deck()
     play_again = "y"
     while play_again == "y":
@@ -336,28 +443,8 @@ def blackjack():
         gambler.compute_score()
         gambler.show_score()
         dealer.compute_partial_score()
-        
         stick_or_twist()
-        
-        gambler.show_score()
-        if gambler.score > 21:
-            endgame()
-        else:
-            dealer.show_hand()
-            dealer.show_score()
-        
-        while dealer.score < 17:
-            if dealer.score > gambler.score:
-                break
-            dealer.dealer_draw()
-            dealer.show_hand()
-        
-            if 17 <= dealer.score <= 21:
-                print(f"{dealer.name} must stand. {dealer.name}\'s final score is: {dealer.score}")
-            elif dealer.score > 21:
-                print(f"{dealer.name} is bust. {dealer.name}\'s final score is: {dealer.score}")
-            else:
-                continue
+        dealer_play()
         endgame()
         if gambler.balance == 0:
             print("Out of money, game over!")
@@ -365,4 +452,8 @@ def blackjack():
         else:
             play_again = input("Would you like to play another hand? Enter y to play again ")
 
+
+
 blackjack()
+
+
