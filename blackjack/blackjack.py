@@ -21,6 +21,32 @@ cards = {'Ace of Spades': 11, '2 of Spades': 2, '3 of Spades': 3, '4 of Spades':
        'King of Clubs': 10}
 
 
+class Pot:
+
+    def __init__(self, name):
+        self.name = name
+        self.balance = 0
+
+    def empty_pot(self):
+
+        """
+        
+        Empties the pot and resets, ready for the next round of play.
+
+        """
+
+        self.balance = 0
+
+
+    def double_down(self):
+
+        """
+        
+        Doubles the current pot wager when the bettor requests to double down on their hand.
+
+        """
+
+        self.balance * 2
 
 class Player:
     
@@ -122,9 +148,8 @@ class Player:
         
         self.balance -= wager
         print("Your balance is now:", self.balance)
-        global pot
-        pot += wager
-        print("The pot this round is now:", pot)
+        pot.balance += wager
+        print("The pot this round is now:", pot.balance)
         sleep(2)
         return wager
     
@@ -191,15 +216,12 @@ class Player:
 
         """
 
-
-        global pot
-        wager = pot
-        self.balance -= wager
+        self.balance -= pot.balance
         print(f"{self.name} is confident in their hand and opts to double down on the bet!")
-        print("Additional Wager Amount:", wager)
+        print("Additional Wager Amount:", pot.balance)
         print("Your balance is now:", self.balance)
-        pot += wager
-        print("The pot this round is now:", pot)
+        pot.double_down()
+        print("The pot this round is now:", pot.balance)
         sleep(2)
         self.draw_card()
         self.compute_score()
@@ -259,19 +281,8 @@ class Dealer(Player):
 
 gambler = Player('Connor')
 dealer = Dealer('Dealer')
+pot = Pot('Casino')
 
-
-
-def empty_pot():
-    
-    """
-    
-    Creates an empty pot at the start of each round to store prize money. 
-    This pot is then used to credit winnings at the end of the game.
-    
-    """
-    global pot
-    pot = 0
 
 
 def game_reset():
@@ -285,7 +296,7 @@ def game_reset():
     clear_output()
     gambler.reset()
     dealer.reset()
-    empty_pot()
+    pot.empty_pot()
     global surrendered
     surrendered = False
 
@@ -343,8 +354,7 @@ def stick_or_twist():
             gambler.surrender()
             endgame()
         elif choice == "double down":
-            global pot
-            if gambler.balance > pot:
+            if gambler.balance > pot.balance:
                 gambler.double_down()
             else:
                 print("Insufficient balance to double down on your bet")
@@ -353,8 +363,6 @@ def stick_or_twist():
                     gambler.draw_card()
                     gambler.compute_score()
                     gambler.show_score()
-                    dealer.show_hand()
-                    dealer.show_score()
                     if gambler.score == 21:
                         print(f"{gambler.name} got a blackjack!")
                         break
@@ -363,14 +371,17 @@ def stick_or_twist():
                         break
                     else:
                         choice = input("stick or twist? ")
+                        if choice == "twist":
+                            dealer.show_hand()
+                            dealer.show_score()
+                            sleep(2)
+                        else:
+                            break
         else:
             while choice == "twist":
                 gambler.draw_card()
                 gambler.compute_score()
                 gambler.show_score()
-                sleep(2)
-                dealer.show_hand()
-                dealer.show_score()
                 sleep(2)
                 if gambler.score == 21:
                     print(f"{gambler.name} got a blackjack!")
@@ -380,6 +391,12 @@ def stick_or_twist():
                     break
                 else:
                     choice = input("stick or twist? ")
+                    if choice == "twist":
+                            dealer.show_hand()
+                            dealer.show_score()
+                            sleep(2)
+                    else:
+                        break
 
 
 
@@ -391,6 +408,8 @@ def dealer_play():
 
     """
 
+    dealer.show_hand()
+    dealer.show_score()
     while dealer.score < 17:
         dealer.dealer_draw()
         dealer.show_hand()
@@ -415,9 +434,8 @@ def jackpot(result):
         print("BLACKJACK!!!!! You win! Congratulations!")
         sleep(2)
         # Getting blackjack pays out at 3/2 odds vs regular wins at Evens
-        global pot
-        winnings = pot * 1.5
-        stake = pot
+        winnings = pot.balance * 1.5
+        stake = pot.balance
         payout = winnings + stake
         dealer.balance -= winnings
         gambler.balance += payout
@@ -427,24 +445,24 @@ def jackpot(result):
     elif result == "dealer bust":
         print("The dealer is bust but you are not! You win! Congratulations!")
         sleep(2)
-        dealer.balance -= pot
-        pot = pot * 2
-        gambler.balance += pot
-        print(f"{gambler.name} won {pot} on this hand.")
+        dealer.balance -= pot.balance
+        pot.balance = pot.balance * 2
+        gambler.balance += pot.balance
+        print(f"{gambler.name} won {pot.balance} on this hand.")
         print(f"{gambler.name}\'s balance is now {gambler.balance}")
         print(f"The house balance is now {dealer.balance}")
     elif result == "closest wins":
         print("You were closer to 21 than the dealer! You win! Congratulations!")
         sleep(2)
-        dealer.balance -= pot
-        pot = pot * 2
-        gambler.balance += pot
-        print(f"{gambler.name} won {pot} on this hand.")
+        dealer.balance -= pot.balance
+        pot.balance = pot.balance * 2
+        gambler.balance += pot.balance
+        print(f"{gambler.name} won {pot.balance} on this hand.")
         print(f"{gambler.name}\'s balance is now {gambler.balance}")
         print(f"The house balance is now {dealer.balance}")
     else:
         pass
-    empty_pot()
+    pot.empty_pot()
 
 
 
@@ -459,37 +477,37 @@ def loss(result):
     if result == "surrender":
         print(f"Game aborted! {gambler.name} surrendered")
         sleep(2)
-        gambler.balance += pot * 0.5
-        dealer.balance += pot * 0.5
-        print(f"{gambler.name} lost {pot * 0.5} on this hand.")
+        gambler.balance += pot.balance * 0.5
+        dealer.balance += pot.balance * 0.5
+        print(f"{gambler.name} lost {pot.balance * 0.5} on this hand.")
         print(f"{gambler.name}\'s balance is now {gambler.balance}")
         print(f"The house balance is now {dealer.balance}")
     elif result == "bust":
         # You are bust, house always wins
         print("Bust! You lose! House wins.")
         sleep(2)
-        dealer.balance += pot
-        print(f"{gambler.name} lost {pot} on this hand.")
+        dealer.balance += pot.balance
+        print(f"{gambler.name} lost {pot.balance} on this hand.")
         print(f"{gambler.name}\'s balance is now {gambler.balance}")
         print(f"The house balance is now {dealer.balance}")
     elif result == "close but no cigar":
         # Neither is bust, but dealer is closer than you
         print("You lose! The dealer was closer to 21 than you. House wins.")
         sleep(2)
-        dealer.balance += pot
-        print(f"{gambler.name} lost {pot} on this hand.")
+        dealer.balance += pot.balance
+        print(f"{gambler.name} lost {pot.balance} on this hand.")
         print(f"{gambler.name}\'s balance is now {gambler.balance}")
         print(f"The house balance is now {dealer.balance}")
     elif result == "push":
         # Bet ends in a push
         print("Bet ends in a push. Bets will be refunded. No action this round.") # your score is tied with the dealer
         sleep(2)
-        gambler.balance += pot
-        print(f"{gambler.name} is refunded {pot} on this hand.")
+        gambler.balance += pot.balance
+        print(f"{gambler.name} is refunded {pot.balance} on this hand.")
         print(f"{gambler.name}\'s balance is now {gambler.balance}")
     else:
         pass
-    empty_pot()
+    pot.empty_pot()
 
 
 
