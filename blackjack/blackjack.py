@@ -167,6 +167,19 @@ class Player:
 
 
 
+    def surrender(self):
+
+        """
+
+        Gives player the option to surrender if they do not like their hand, and receive half of their bet back.
+
+        """
+
+        global surrendered
+        surrendered = True
+
+
+
 class Dealer(Player):
     
     def __init__(self, name):
@@ -233,6 +246,22 @@ def empty_pot():
     pot = 0
 
 
+def game_reset():
+
+    """
+
+    Resets the game.
+
+    """
+
+    clear_output()
+    gambler.reset()
+    dealer.reset()
+    empty_pot()
+    global surrendered
+    surrendered = False
+
+
 
 def create_deck():
     
@@ -281,21 +310,25 @@ def stick_or_twist():
     if gambler.score == 21:
         choice = "stick"
     else:
-        choice = input("stick or twist? ")
-        while choice == "twist":
-            gambler.draw_card()
-            gambler.compute_score()
-            gambler.show_score()
-            dealer.show_hand()
-            dealer.show_score()
-            if gambler.score == 21:
-                print(f"{gambler.name} got a blackjack!")
-                break
-            elif gambler.score > 21:
-                print(f"{gambler.name} is bust!")
-                break
-            else:
-                choice = input("stick or twist? ")          
+        choice = input("stick, twist or surrender? ").lower()
+        if choice == "surrender":
+            gambler.surrender()
+            endgame()
+        else:
+            while choice == "twist":
+                gambler.draw_card()
+                gambler.compute_score()
+                gambler.show_score()
+                dealer.show_hand()
+                dealer.show_score()
+                if gambler.score == 21:
+                    print(f"{gambler.name} got a blackjack!")
+                    break
+                elif gambler.score > 21:
+                    print(f"{gambler.name} is bust!")
+                    break
+                else:
+                    choice = input("stick or twist? ")          
 
 
 
@@ -329,10 +362,13 @@ def jackpot(result):
     
     if result == "blackjack":
         print("BLACKJACK!!!!! You win! Congratulations!")
+        # Getting blackjack pays out at 3/2 odds vs regular wins at Evens
         global pot
-        dealer.balance -= pot
-        pot = pot * 2
-        gambler.balance += pot
+        winnings = pot * 1.5
+        stake = pot
+        payout = winnings + stake
+        dealer.balance -= winnings
+        gambler.balance += payout
         print(f"Your balance is now {gambler.balance}")
         print(f"The house balance is now {dealer.balance}")
     elif result == "dealer bust":
@@ -363,7 +399,13 @@ def loss(result):
 
     """
 
-    if result == "bust":
+    if result == "surrender":
+        print(f"Game aborted! {gambler.name} surrendered")
+        gambler.balance += pot * 0.5
+        dealer.balance += pot * 0.5
+        print(f"Your balance is now {gambler.balance}")
+        print(f"The house balance is now {dealer.balance}")
+    elif result == "bust":
         # You are bust, house always wins
         print("Bust! You lose! House wins.")
         dealer.balance += pot
@@ -394,26 +436,30 @@ def endgame():
 
     """
 
-    print(f"Your final score is {gambler.score}. Dealer's final score is {dealer.score}.")
-
-    if gambler.score == 21 and dealer.score != 21:
-        result = "blackjack"
-        jackpot(result)
-    elif 21 - gambler.score < 0: # you are bust, house always wins
-        result = "bust"
-        loss(result)
-    elif 21 - gambler.score >= 0 and 21 - dealer.score < 0: # you are not bust, house is bust, you win
-        result = "dealer bust"
-        jackpot(result)
-    elif 21 - gambler.score < 21 - dealer.score: # neither is bust, but you are closer than dealer
-        result = "closest wins"
-        jackpot(result)
-    elif 21 - gambler.score > 21 - dealer.score: # neither is bust, but dealer is closer than you
-        result = "close but no cigar"
+    if surrendered == True:
+        result = "surrender"
         loss(result)
     else:
-        result = "push"
-        loss(result)
+        print(f"Your final score is {gambler.score}. Dealer's final score is {dealer.score}.")
+
+        if gambler.score == 21 and dealer.score != 21:
+            result = "blackjack"
+            jackpot(result)
+        elif 21 - gambler.score < 0: # you are bust, house always wins
+            result = "bust"
+            loss(result)
+        elif 21 - gambler.score >= 0 and 21 - dealer.score < 0: # you are not bust, house is bust, you win
+            result = "dealer bust"
+            jackpot(result)
+        elif 21 - gambler.score < 21 - dealer.score: # neither is bust, but you are closer than dealer
+            result = "closest wins"
+            jackpot(result)
+        elif 21 - gambler.score > 21 - dealer.score: # neither is bust, but dealer is closer than you
+            result = "close but no cigar"
+            loss(result)
+        else:
+            result = "push"
+            loss(result)
 
 
 
@@ -429,10 +475,7 @@ def blackjack():
     create_deck()
     play_again = "y"
     while play_again == "y":
-        clear_output()
-        gambler.reset()
-        dealer.reset()
-        empty_pot()
+        game_reset()
         if len(deck) <= 10:
             create_deck()
             print("The deck is running low on cards. The dealer introduces a new set of 52.")
@@ -444,8 +487,9 @@ def blackjack():
         gambler.show_score()
         dealer.compute_partial_score()
         stick_or_twist()
-        dealer_play()
-        endgame()
+        if surrendered == False:
+            dealer_play()
+            endgame()
         if gambler.balance == 0:
             print("Out of money, game over!")
             play_again = "n"
