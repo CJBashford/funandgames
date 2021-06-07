@@ -180,6 +180,29 @@ class Player:
 
 
 
+    def double_down(self):
+
+        """
+
+        Gives player the option to double down on their bet and double their wager if they feel their hand is advantageous. They then receive one additional card only."
+
+        """
+
+
+        global pot
+        wager = pot
+        self.balance -= wager
+        print(f"{self.name} is confident in their hand and opts to double down on the bet!")
+        print("Additional Wager Amount:", wager)
+        print("Your balance is now:", self.balance)
+        pot += wager
+        print("The pot this round is now:", pot)
+        self.draw_card()
+        self.compute_score()
+        self.show_score()
+
+
+
 class Dealer(Player):
     
     def __init__(self, name):
@@ -310,10 +333,31 @@ def stick_or_twist():
     if gambler.score == 21:
         choice = "stick"
     else:
-        choice = input("stick, twist or surrender? ").lower()
+        choice = input("stick, twist, surrender or double down? ").lower()
         if choice == "surrender":
             gambler.surrender()
             endgame()
+        elif choice == "double down":
+            global pot
+            if gambler.balance > pot:
+                gambler.double_down()
+            else:
+                print("Insufficient balance to double down on your bet")
+                choice = input("stick or twist? ").lower()
+                while choice == "twist":
+                    gambler.draw_card()
+                    gambler.compute_score()
+                    gambler.show_score()
+                    dealer.show_hand()
+                    dealer.show_score()
+                    if gambler.score == 21:
+                        print(f"{gambler.name} got a blackjack!")
+                        break
+                    elif gambler.score > 21:
+                        print(f"{gambler.name} is bust!")
+                        break
+                    else:
+                        choice = input("stick or twist? ")
         else:
             while choice == "twist":
                 gambler.draw_card()
@@ -328,7 +372,7 @@ def stick_or_twist():
                     print(f"{gambler.name} is bust!")
                     break
                 else:
-                    choice = input("stick or twist? ")          
+                    choice = input("stick or twist? ")
 
 
 
@@ -369,21 +413,24 @@ def jackpot(result):
         payout = winnings + stake
         dealer.balance -= winnings
         gambler.balance += payout
-        print(f"Your balance is now {gambler.balance}")
+        print(f"{gambler.name} won {payout} on this hand.")
+        print(f"{gambler.name}\'s balance is now {gambler.balance}")
         print(f"The house balance is now {dealer.balance}")
     elif result == "dealer bust":
         print("The dealer is bust but you are not! You win! Congratulations!")
         dealer.balance -= pot
         pot = pot * 2
         gambler.balance += pot
-        print(f"Your balance is now {gambler.balance}")
+        print(f"{gambler.name} won {pot} on this hand.")
+        print(f"{gambler.name}\'s balance is now {gambler.balance}")
         print(f"The house balance is now {dealer.balance}")
     elif result == "closest wins":
         print("You were closer to 21 than the dealer! You win! Congratulations!")
         dealer.balance -= pot
         pot = pot * 2
         gambler.balance += pot
-        print(f"Your balance is now {gambler.balance}")
+        print(f"{gambler.name} won {pot} on this hand.")
+        print(f"{gambler.name}\'s balance is now {gambler.balance}")
         print(f"The house balance is now {dealer.balance}")
     else:
         pass
@@ -403,25 +450,29 @@ def loss(result):
         print(f"Game aborted! {gambler.name} surrendered")
         gambler.balance += pot * 0.5
         dealer.balance += pot * 0.5
-        print(f"Your balance is now {gambler.balance}")
+        print(f"{gambler.name} lost {pot * 0.5} on this hand.")
+        print(f"{gambler.name}\'s balance is now {gambler.balance}")
         print(f"The house balance is now {dealer.balance}")
     elif result == "bust":
         # You are bust, house always wins
         print("Bust! You lose! House wins.")
         dealer.balance += pot
-        print(f"Your balance is now {gambler.balance}")
+        print(f"{gambler.name} lost {pot} on this hand.")
+        print(f"{gambler.name}\'s balance is now {gambler.balance}")
         print(f"The house balance is now {dealer.balance}")
     elif result == "close but no cigar":
         # Neither is bust, but dealer is closer than you
         print("You lose! The dealer was closer to 21 than you. House wins.")
         dealer.balance += pot
-        print(f"Your balance is now {gambler.balance}")
+        print(f"{gambler.name} lost {pot} on this hand.")
+        print(f"{gambler.name}\'s balance is now {gambler.balance}")
         print(f"The house balance is now {dealer.balance}")
     elif result == "push":
         # Bet ends in a push
         print("Bet ends in a push. Bets will be refunded. No action this round.") # your score is tied with the dealer
         gambler.balance += pot
-        print(f"Your balance is now {gambler.balance}")
+        print(f"{gambler.name} is refunded {pot} on this hand.")
+        print(f"{gambler.name}\'s balance is now {gambler.balance}")
     else:
         pass
     empty_pot()
