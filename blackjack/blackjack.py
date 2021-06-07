@@ -290,20 +290,19 @@ def create_deck():
     
     """
     
-    Creates a deck of 52 playing cards using the keys in the cards dictionary.
+    Creates a deck of 52 playing cards using the keys in the cards dictionary, and shuffles them.
     
     """
     
     global deck
     deck = list(cards.keys())
-
+    random.shuffle(deck)
 
 
 def deal():
     
     """
     
-    Shuffles the deck.
     Assigns an empty list variable for both the player and the dealer, then populates this empty list with
     cards drawn from the top of the deck to generate a hand for the player.
     This function is used at the start of the game to deal the initial two cards to each player, with the dealer
@@ -311,7 +310,6 @@ def deal():
     
     """
     
-    random.shuffle(deck)
     counter = 0
     while (counter < 2):
         gambler.hand.append(deck[-1])
