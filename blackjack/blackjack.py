@@ -1,5 +1,6 @@
 import random
 from IPython.display import clear_output
+from time import sleep
 
 
 
@@ -55,6 +56,7 @@ class Player:
         """
         
         print(f"{self.name}\'s hand is: {self.hand}")
+        sleep(2)
     
 
 
@@ -123,6 +125,7 @@ class Player:
         global pot
         pot += wager
         print("The pot this round is now:", pot)
+        sleep(2)
         return wager
     
 
@@ -197,6 +200,7 @@ class Player:
         print("Your balance is now:", self.balance)
         pot += wager
         print("The pot this round is now:", pot)
+        sleep(2)
         self.draw_card()
         self.compute_score()
         self.show_score()
@@ -234,6 +238,7 @@ class Dealer(Player):
         """
         
         print(f"{self.name}\'s hand is: {self.hand[:-1]} + ???")
+        sleep(2)
     
 
 
@@ -310,6 +315,8 @@ def deal():
     
     """
     
+    print("The cards are dealt, welcome to Blackjack!")
+    sleep(2)
     counter = 0
     while (counter < 2):
         gambler.hand.append(deck[-1])
@@ -361,8 +368,10 @@ def stick_or_twist():
                 gambler.draw_card()
                 gambler.compute_score()
                 gambler.show_score()
+                sleep(2)
                 dealer.show_hand()
                 dealer.show_score()
+                sleep(2)
                 if gambler.score == 21:
                     print(f"{gambler.name} got a blackjack!")
                     break
@@ -404,6 +413,7 @@ def jackpot(result):
     
     if result == "blackjack":
         print("BLACKJACK!!!!! You win! Congratulations!")
+        sleep(2)
         # Getting blackjack pays out at 3/2 odds vs regular wins at Evens
         global pot
         winnings = pot * 1.5
@@ -416,6 +426,7 @@ def jackpot(result):
         print(f"The house balance is now {dealer.balance}")
     elif result == "dealer bust":
         print("The dealer is bust but you are not! You win! Congratulations!")
+        sleep(2)
         dealer.balance -= pot
         pot = pot * 2
         gambler.balance += pot
@@ -424,6 +435,7 @@ def jackpot(result):
         print(f"The house balance is now {dealer.balance}")
     elif result == "closest wins":
         print("You were closer to 21 than the dealer! You win! Congratulations!")
+        sleep(2)
         dealer.balance -= pot
         pot = pot * 2
         gambler.balance += pot
@@ -446,6 +458,7 @@ def loss(result):
 
     if result == "surrender":
         print(f"Game aborted! {gambler.name} surrendered")
+        sleep(2)
         gambler.balance += pot * 0.5
         dealer.balance += pot * 0.5
         print(f"{gambler.name} lost {pot * 0.5} on this hand.")
@@ -454,6 +467,7 @@ def loss(result):
     elif result == "bust":
         # You are bust, house always wins
         print("Bust! You lose! House wins.")
+        sleep(2)
         dealer.balance += pot
         print(f"{gambler.name} lost {pot} on this hand.")
         print(f"{gambler.name}\'s balance is now {gambler.balance}")
@@ -461,6 +475,7 @@ def loss(result):
     elif result == "close but no cigar":
         # Neither is bust, but dealer is closer than you
         print("You lose! The dealer was closer to 21 than you. House wins.")
+        sleep(2)
         dealer.balance += pot
         print(f"{gambler.name} lost {pot} on this hand.")
         print(f"{gambler.name}\'s balance is now {gambler.balance}")
@@ -468,6 +483,7 @@ def loss(result):
     elif result == "push":
         # Bet ends in a push
         print("Bet ends in a push. Bets will be refunded. No action this round.") # your score is tied with the dealer
+        sleep(2)
         gambler.balance += pot
         print(f"{gambler.name} is refunded {pot} on this hand.")
         print(f"{gambler.name}\'s balance is now {gambler.balance}")
@@ -490,6 +506,7 @@ def endgame():
         loss(result)
     else:
         print(f"Your final score is {gambler.score}. Dealer's final score is {dealer.score}.")
+        sleep(2)
 
         if gambler.score == 21 and dealer.score != 21:
             result = "blackjack"
@@ -509,7 +526,7 @@ def endgame():
         else:
             result = "push"
             loss(result)
-
+    sleep(2)
 
 
 def blackjack():
@@ -528,12 +545,13 @@ def blackjack():
         if len(deck) <= 10:
             create_deck()
             print("The deck is running low on cards. The dealer introduces a new set of 52.")
+            sleep(2)
         gambler.place_wager()
         deal()
         gambler.show_hand()
-        dealer.show_partial_hand()
         gambler.compute_score()
         gambler.show_score()
+        dealer.show_partial_hand()
         dealer.compute_partial_score()
         stick_or_twist()
         if surrendered == False:
@@ -546,7 +564,8 @@ def blackjack():
             play_again = input("Would you like to play another hand? Enter y to play again ")
 
 
+def main():
+    blackjack()
 
-blackjack()
-
-
+if __name__ == "__main__":
+    main()
