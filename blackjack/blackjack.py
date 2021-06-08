@@ -46,7 +46,9 @@ class Pot:
 
         """
 
-        self.balance * 2
+        self.balance = self.balance * 2
+
+
 
 class Player:
     
@@ -238,6 +240,7 @@ class Dealer(Player):
 
 
     def dealer_draw(self):
+        
         """
 
         Draws a card for the dealer.
@@ -383,20 +386,16 @@ def stick_or_twist():
                 gambler.compute_score()
                 gambler.show_score()
                 sleep(2)
-                if gambler.score == 21:
+                if gambler.score == 21 and len(gambler.hand) == 2:
                     print(f"{gambler.name} got a blackjack!")
                     break
+                elif gambler.score == 21:
+                    choice == "stick"
                 elif gambler.score > 21:
                     print(f"{gambler.name} is bust!")
                     break
                 else:
                     choice = input("stick or twist? ")
-                    if choice == "twist":
-                            dealer.show_hand()
-                            dealer.show_score()
-                            sleep(2)
-                    else:
-                        break
 
 
 
@@ -410,15 +409,53 @@ def dealer_play():
 
     dealer.show_hand()
     dealer.show_score()
+    sleep(2)
     while dealer.score < 17:
         dealer.dealer_draw()
-        dealer.show_hand()
+        sleep(2)
     if dealer.score > 21:
         print(f"{dealer.name} is bust!")
+        sleep(2)
     elif dealer.score >= 17 and dealer.score <= 21:
         print(f"{dealer.name} must stand.")
+        sleep(2)
     else:
         pass
+
+
+
+def basic_victory():
+
+    """
+
+    Set of actions that occur in several scenarios that result in a generic victory.
+
+    """
+
+    sleep(2)
+    dealer.balance -= pot.balance
+    pot.balance = pot.balance * 2
+    gambler.balance += pot.balance
+    print(f"{gambler.name} won {pot.balance} on this hand.")
+    print(f"{gambler.name}\'s balance is now {gambler.balance}")
+    print(f"The house balance is now {dealer.balance}")
+
+
+
+def basic_loss():
+
+    """
+
+    Set of actions that occur in several scenarios that result in a generic loss.
+
+    """
+
+    sleep(2)
+    dealer.balance += pot.balance
+    print(f"{gambler.name} lost {pot.balance} on this hand.")
+    print(f"{gambler.name}\'s balance is now {gambler.balance}")
+    print(f"The house balance is now {dealer.balance}")
+
 
 
 
@@ -442,24 +479,15 @@ def jackpot(result):
         print(f"{gambler.name} won {payout} on this hand.")
         print(f"{gambler.name}\'s balance is now {gambler.balance}")
         print(f"The house balance is now {dealer.balance}")
+    elif result == "21 no blackjack":
+        print("You got 21 and beat the dealer! You win! Congratulations!")
+        basic_victory()
     elif result == "dealer bust":
         print("The dealer is bust but you are not! You win! Congratulations!")
-        sleep(2)
-        dealer.balance -= pot.balance
-        pot.balance = pot.balance * 2
-        gambler.balance += pot.balance
-        print(f"{gambler.name} won {pot.balance} on this hand.")
-        print(f"{gambler.name}\'s balance is now {gambler.balance}")
-        print(f"The house balance is now {dealer.balance}")
+        basic_victory()
     elif result == "closest wins":
         print("You were closer to 21 than the dealer! You win! Congratulations!")
-        sleep(2)
-        dealer.balance -= pot.balance
-        pot.balance = pot.balance * 2
-        gambler.balance += pot.balance
-        print(f"{gambler.name} won {pot.balance} on this hand.")
-        print(f"{gambler.name}\'s balance is now {gambler.balance}")
-        print(f"The house balance is now {dealer.balance}")
+        basic_victory()
     else:
         pass
     pot.empty_pot()
@@ -485,19 +513,11 @@ def loss(result):
     elif result == "bust":
         # You are bust, house always wins
         print("Bust! You lose! House wins.")
-        sleep(2)
-        dealer.balance += pot.balance
-        print(f"{gambler.name} lost {pot.balance} on this hand.")
-        print(f"{gambler.name}\'s balance is now {gambler.balance}")
-        print(f"The house balance is now {dealer.balance}")
+        basic_loss()
     elif result == "close but no cigar":
         # Neither is bust, but dealer is closer than you
         print("You lose! The dealer was closer to 21 than you. House wins.")
-        sleep(2)
-        dealer.balance += pot.balance
-        print(f"{gambler.name} lost {pot.balance} on this hand.")
-        print(f"{gambler.name}\'s balance is now {gambler.balance}")
-        print(f"The house balance is now {dealer.balance}")
+        basic_loss()
     elif result == "push":
         # Bet ends in a push
         print("Bet ends in a push. Bets will be refunded. No action this round.") # your score is tied with the dealer
@@ -526,8 +546,11 @@ def endgame():
         print(f"Your final score is {gambler.score}. Dealer's final score is {dealer.score}.")
         sleep(2)
 
-        if gambler.score == 21 and dealer.score != 21:
+        if gambler.score == 21 and dealer.score != 21 and len(gambler.hand) == 2:
             result = "blackjack"
+            jackpot(result)
+        elif gambler.score == 21 and dealer.score != 21 and len(gambler.hand) > 2:
+            result = "21 no blackjack"
             jackpot(result)
         elif 21 - gambler.score < 0: # you are bust, house always wins
             result = "bust"
@@ -545,6 +568,7 @@ def endgame():
             result = "push"
             loss(result)
     sleep(2)
+
 
 
 def blackjack():
@@ -572,6 +596,7 @@ def blackjack():
         dealer.show_partial_hand()
         dealer.compute_partial_score()
         stick_or_twist()
+        sleep(2)
         if surrendered == False:
             dealer_play()
             endgame()
@@ -582,8 +607,11 @@ def blackjack():
             play_again = input("Would you like to play another hand? Enter y to play again ")
 
 
+
 def main():
     blackjack()
+
+
 
 if __name__ == "__main__":
     main()
