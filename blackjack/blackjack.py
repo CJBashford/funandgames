@@ -21,6 +21,7 @@ cards = {'Ace of Spades': 11, '2 of Spades': 2, '3 of Spades': 3, '4 of Spades':
        'King of Clubs': 10}
 
 
+
 class Pot:
 
     def __init__(self, name):
@@ -63,6 +64,7 @@ class Player:
         self.score = 0
         self.opening_wager = 0
         self.insurance_wager = 0
+        self.round_winnings = 0
     
 
 
@@ -78,6 +80,7 @@ class Player:
         self.score = 0
         self.opening_wager = 0
         self.insurance_wager = 0
+        self.round_winnings = 0
     
 
 
@@ -136,16 +139,16 @@ class Player:
                     elif stakes == 'Y':
                         minimum_bet = 100
                         maximum_bet = 1000
-                        print("High stakes chosen. Minimum bet per hand is now 100, maximum bet per hand is now 1000.")
+                        print("High stakes chosen. Minimum bet per hand is now £100, maximum bet per hand is now £1000.")
                         break
                     else:
-                        print("Low stakes chosen. Minimum bet per hand remains at 2, maximum bet per hand remains at 500")
+                        print("Low stakes chosen. Minimum bet per hand remains at £2, maximum bet per hand remains at £500")
                         break
 
             while True:
                 try:
-                    print("Your balance is:", self.balance)
-                    wager = int(input("Wager Amount: "))
+                    print(f"Your balance is: £{self.balance}")
+                    wager = int(input("Wager Amount: £"))
                 except ValueError:
                     print("Invalid number provided")
                     continue
@@ -158,9 +161,9 @@ class Player:
                     break
             
             self.balance -= wager
-            print("Your balance is now:", self.balance)
+            print(f"Your balance is now: £{self.balance}")
             pot.balance += wager
-            print("The pot this round is now:", pot.balance)
+            print(f"The pot this round is now: £{pot.balance}")
             self.opening_wager += wager
             sleep(2)
             return wager
@@ -169,9 +172,9 @@ class Player:
             wager_this_hand = self.opening_wager
             insurance_wager = wager_this_hand / 2
             self.balance -= insurance_wager
-            print("Your balance is now:", self.balance)
+            print(f"Your balance is now: £{self.balance}")
             pot.insurance_bet_balance += insurance_wager
-            print("The insurance pot this round is now:", pot.insurance_bet_balance)
+            print(f"The insurance pot this round is now: £{pot.insurance_bet_balance}")
             self.insurance_wager += insurance_wager
             sleep(2)
             return wager
@@ -213,7 +216,9 @@ class Player:
         """
         
         print(f"{self.name}\'s score is: {self.score}")
-        
+    
+
+
     def __str__(self):
         
         return self.name
@@ -243,11 +248,11 @@ class Player:
 
         self.balance -= self.wager_this_hand
         print(f"{self.name} is confident in their hand and opts to double down on the bet!")
-        print("Additional Wager Amount:", self.wager_this_hand)
-        print("Your balance is now:", self.balance)
-        self.wager_this_hand += self.wager_this_hand
+        print(f"Additional Wager Amount: £ {self.opening_wager}")
+        print(f"Your balance is now: £{self.balance}")
+        self.opening_wager += self.opening_wager
         pot.double_down()
-        print("The pot this round is now:", pot.balance)
+        print(f"The pot this round is now: £{pot.balance}")
         sleep(2)
         self.draw_card()
         self.compute_score()
@@ -260,7 +265,13 @@ class Dealer(Player):
     def __init__(self, name):
         super().__init__(name)
         self.balance = 5000
+        self.round_payouts = 0
     
+
+
+    def reset(self):
+        super().reset()
+        self.round_payouts = 0
 
 
     def dealer_draw(self):
@@ -323,10 +334,66 @@ class Dealer(Player):
 
 
 
+class Scoreboard:
+
+    def __init__(self):
+        self.hands_played = 0
+        self.player_wins = 0
+        self.house_wins = 0
+        self.rounds_drawn = 0
+        self.total_player_wagers = 0
+        self.total_player_winnings = 0
+        self.total_house_winnings = 0
+        self.total_house_payouts = 0
+
+
+
+    def reset(self):
+
+        """
+
+        Resets scoreboard at the beginning of a new session of play.
+
+        """
+
+        self.hands_played = 0
+        self.player_wins = 0
+        self.house_wins = 0
+        self.rounds_drawn = 0
+        self.total_player_wagers = 0
+        self.total_player_winnings = 0
+        self.total_house_winnings = 0
+        self.total_house_payouts = 0
+
+
+
+    def show(self):
+
+        """
+
+        Shows the scoreboard at the end of each round.
+
+        """
+
+        sleep(2)
+        print("***** SCOREBOARD *****")
+        print("*** HAND OUTCOMES ***")
+        print(f"{gambler.name} has won {self.player_wins} hands.")
+        print(f"{dealer.name} has won {self.house_wins} hands.")
+        print(f"{self.rounds_drawn} hands have ended in a push.")
+        sleep(2)
+        print("*** BET OUTCOMES ***")
+        print(f"{gambler.name} has placed a total of £{self.total_player_wagers} and won a total of £{self.total_player_winnings} this session.")
+        print(f"{gambler.name} has a net profit/loss of £{self.total_player_winnings - self.total_player_wagers} this session.")
+        print(f"{dealer.name} has a net profit/loss of £{self.total_house_winnings - self.total_house_payouts} this session.")
+
+
+
 # Initializing class variables to play game.
 gambler = Player('Connor')
 dealer = Dealer('Dealer')
 pot = Pot('Casino')
+scoreboard = Scoreboard()
 
 
 
@@ -478,7 +545,7 @@ def place_insurance():
 
     """
 
-    if gambler.balance >= gambler.wager_this_hand / 2:
+    if gambler.balance >= gambler.opening_wager / 2:
         while True:
                 print("Dealer has an ace. Would you like to take an insurance bet?")
                 insurance_bet = input("Place Insurance Bet yes/no: ").upper()
@@ -505,21 +572,26 @@ def settle_insurance():
     if gambler.insurance_wager > 0:
         if dealer.score == 21 and len(dealer.hand) == 2:
             # Winning insurance bet where dealer has blackjack
-            dealer.balance -= gambler.insurance_wager * 2
-            pot.insurance_bet_balance += gambler.insurance_wager * 2
+            insurance_payout = gambler.insurance_wager * 2
+            dealer.balance -= insurance_payout
+            dealer.round_payouts += insurance_payout
+            pot.insurance_bet_balance += insurance_payout
             gambler.balance += pot.insurance_bet_balance
+            gambler.round_winnings += pot.insurance_bet_balance
             pot.insurance_bet_balance = 0
             print(f"{dealer.name} had blackjack. {gambler.name} wins their insurance bet, paid out at 2/1 odds.")
-            print(f"{gambler.name}\'s balance is now:", gambler.balance)
-            print(f"The house balance is now {dealer.balance}")
+            print(f"{gambler.name}\'s balance is now £{gambler.balance}")
+            print(f"The house balance is now £{dealer.balance}")
         else:
             # Losing insurance bet where dealer does not have blackjack
             dealer.balance += gambler.insurance_wager
+            dealer.round_winnings += gambler.insurance_wager
             print(f"Dealer does not have blackjack. {gambler.name} loses their insurance bet this round.")
-            print(f"{gambler.name} lost {gambler.insurance_wager} on this insurance bet.")
-            print(f"The house balance is now {dealer.balance}")
+            print(f"{gambler.name} lost £{gambler.insurance_wager} on this insurance bet.")
+            print(f"The house balance is now £{dealer.balance}")
     else:
         print("No insurance bets this hand")
+
 
 
 def basic_victory():
@@ -532,11 +604,14 @@ def basic_victory():
 
     sleep(2)
     dealer.balance -= pot.balance
+    dealer.round_payouts += pot.balance
     pot.balance = pot.balance * 2
-    gambler.balance += pot.balance
-    print(f"{gambler.name} won {pot.balance} on this hand.")
-    print(f"{gambler.name}\'s balance is now {gambler.balance}")
-    print(f"The house balance is now {dealer.balance}")
+    winnings = pot.balance
+    gambler.balance += winnings
+    gambler.round_winnings += winnings
+    print(f"{gambler.name} won £{winnings} on this hand.")
+    print(f"{gambler.name}\'s balance is now £{gambler.balance}")
+    print(f"The house balance is now £{dealer.balance}")
 
 
 
@@ -550,9 +625,10 @@ def basic_loss():
 
     sleep(2)
     dealer.balance += pot.balance
-    print(f"{gambler.name} lost {pot.balance} on this hand.")
-    print(f"{gambler.name}\'s balance is now {gambler.balance}")
-    print(f"The house balance is now {dealer.balance}")
+    dealer.round_winnings = pot.balance
+    print(f"{gambler.name} lost £{pot.balance} on this hand.")
+    print(f"{gambler.name}\'s balance is now £{gambler.balance}")
+    print(f"The house balance is now £{dealer.balance}")
 
 
 
@@ -573,9 +649,11 @@ def jackpot(result):
         payout = winnings + stake
         dealer.balance -= winnings
         gambler.balance += payout
-        print(f"{gambler.name} won {payout} on this hand.")
-        print(f"{gambler.name}\'s balance is now {gambler.balance}")
-        print(f"The house balance is now {dealer.balance}")
+        gambler.round_winnings += payout
+        dealer.round_payouts += payout
+        print(f"{gambler.name} won £{payout} on this hand.")
+        print(f"{gambler.name}\'s balance is now £{gambler.balance}")
+        print(f"The house balance is now £{dealer.balance}")
     elif result == "21 no blackjack":
         print("You got 21 and beat the dealer! You win! Congratulations!")
         basic_victory()
@@ -602,11 +680,14 @@ def loss(result):
     if result == "surrender":
         print(f"Game aborted! {gambler.name} surrendered")
         sleep(2)
-        gambler.balance += pot.balance * 0.5
-        dealer.balance += pot.balance * 0.5
-        print(f"{gambler.name} lost {pot.balance * 0.5} on this hand.")
-        print(f"{gambler.name}\'s balance is now {gambler.balance}")
-        print(f"The house balance is now {dealer.balance}")
+        shared_spoils = pot.balance * 0.5
+        gambler.balance += shared_spoils
+        dealer.balance += shared_spoils
+        dealer.round_winnings += shared_spoils
+        gambler.round_winnings += shared_spoils
+        print(f"{gambler.name} lost £{pot.balance * 0.5} on this hand.")
+        print(f"{gambler.name}\'s balance is now £{gambler.balance}")
+        print(f"The house balance is now £{dealer.balance}")
     elif result == "bust":
         # You are bust, house always wins
         print("Bust! You lose! House wins.")
@@ -619,12 +700,43 @@ def loss(result):
         # Bet ends in a push
         print("Bet ends in a push. Bets will be refunded. No action this round.") # your score is tied with the dealer
         sleep(2)
-        gambler.balance += pot.balance
-        print(f"{gambler.name} is refunded {pot.balance} on this hand.")
-        print(f"{gambler.name}\'s balance is now {gambler.balance}")
+        refund = pot.balance
+        gambler.balance += refund
+        gambler.winnings += refund
+        print(f"{gambler.name} is refunded £{refund} on this hand.")
+        print(f"{gambler.name}\'s balance is now £{gambler.balance}")
     else:
         pass
     pot.empty_pot()
+
+
+
+def update_scoreboard(result):
+
+    """
+
+    Updates the scoreboard at the end of the round.
+
+    """
+
+    losses = ["surrender", "bust", "close but no cigar"]
+    wins = ["blackjack", "21 no blackjack", "dealer bust", "closest wins"]
+    pushes = ["push"]
+
+    scoreboard.hands_played += 1
+    scoreboard.total_player_wagers += gambler.opening_wager
+    scoreboard.total_player_wagers += gambler.insurance_wager
+    scoreboard.total_house_winnings += dealer.round_winnings
+    scoreboard.total_house_payouts += dealer.round_payouts
+
+    if result in losses:
+        scoreboard.house_wins += 1
+    elif result in wins:
+        scoreboard.player_wins += 1
+    elif result in pushes:
+        scoreboard.rounds_drawn += 1
+    else:
+        pass
 
 
 
@@ -666,6 +778,8 @@ def endgame():
         else:
             result = "push"
             loss(result)
+    update_scoreboard(result)
+    scoreboard.show()
     sleep(2)
 
 
@@ -680,6 +794,7 @@ def blackjack():
     """
 
     create_deck()
+    scoreboard.reset()
     play_again = "y"
     while play_again == "y":
         game_reset()
