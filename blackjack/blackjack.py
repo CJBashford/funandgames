@@ -26,6 +26,7 @@ class Pot:
     def __init__(self, name):
         self.name = name
         self.balance = 0
+        self.insurance_bet_balance = 0
 
     def empty_pot(self):
 
@@ -36,6 +37,7 @@ class Pot:
         """
 
         self.balance = 0
+        self.insurance_bet_balance = 0
 
 
     def double_down(self):
@@ -59,6 +61,8 @@ class Player:
         self.hand = []
         self.balance = 1000
         self.score = 0
+        self.opening_wager = 0
+        self.insurance_wager = 0
     
 
 
@@ -72,6 +76,8 @@ class Player:
         
         self.hand = []
         self.score = 0
+        self.opening_wager = 0
+        self.insurance_wager = 0
     
 
 
@@ -95,6 +101,7 @@ class Player:
         Takes an additional card from the top of the deck and adds it to the current hand.
         
         """
+
         global deck
         self.hand.append(deck[-1])
         deck.pop()
@@ -103,58 +110,72 @@ class Player:
     
 
 
-    def place_wager(self):
+    def place_wager(self, wager_type):
         
         """
         
         Places a wager on the next hand. User input is validated to check that the wager is both within the
         minimum and maximum wagering boundaries specified, as well as whether the current balance allows the
-        wager to be placed.
+        wager to be placed. Takes the parameter wager_type, which specifies whether the wager is being placed at the beginning of the hand,
+        or whether the wager is being placed as part of an insurance bet.
         
         Returns: an integer value for the amount wagered
         
         """
+
         minimum_bet = 2
         maximum_bet = 500
         
+        if wager_type == "opening":
+            while True:
+                    print("Would you like to play with high or low stakes?")
+                    stakes = input("High or Low Stakes (y/n): ").upper()
+                    if stakes not in ["Y","N"]:
+                        print("Invalid input")
+                        continue
+                    elif stakes == 'Y':
+                        minimum_bet = 100
+                        maximum_bet = 1000
+                        print("High stakes chosen. Minimum bet per hand is now 100, maximum bet per hand is now 1000.")
+                        break
+                    else:
+                        print("Low stakes chosen. Minimum bet per hand remains at 2, maximum bet per hand remains at 500")
+                        break
 
-        while True:
-                print("Would you like to play with high or low stakes?")
-                stakes = input("High or Low Stakes (y/n): ").upper()
-                if stakes not in ["Y","N"]:
-                    print("Invalid input")
+            while True:
+                try:
+                    print("Your balance is:", self.balance)
+                    wager = int(input("Wager Amount: "))
+                except ValueError:
+                    print("Invalid number provided")
                     continue
-                elif stakes == 'Y':
-                    minimum_bet = 100
-                    maximum_bet = 1000
-                    print("High stakes chosen. Minimum bet per hand is now 100, maximum bet per hand is now 1000.")
-                    break
+                if wager < minimum_bet or wager > maximum_bet:
+                    print("Please place a wager within the min/max wager boundaries")
+                    continue
+                elif (self.balance - wager) < 0:
+                    print("Invalid balance available to place this wager")
                 else:
-                    print("Low stakes chosen. Minimum bet per hand remains at 2, maximum bet per hand remains at 500")
                     break
+            
+            self.balance -= wager
+            print("Your balance is now:", self.balance)
+            pot.balance += wager
+            print("The pot this round is now:", pot.balance)
+            self.opening_wager += wager
+            sleep(2)
+            return wager
 
-        while True:
-            try:
-                print("Your balance is:", self.balance)
-                wager = int(input("Wager Amount: "))
-            except ValueError:
-                print("Invalid number provided")
-                continue
-            if wager < minimum_bet or wager > maximum_bet:
-                print("Please place a wager within the min/max wager boundaries")
-                continue
-            elif (self.balance - wager) < 0:
-                print("Invalid balance available to place this wager")
-            else:
-                break
-        
-        self.balance -= wager
-        print("Your balance is now:", self.balance)
-        pot.balance += wager
-        print("The pot this round is now:", pot.balance)
-        sleep(2)
-        return wager
-    
+        elif wager_type == "insurance":
+            wager_this_hand = self.opening_wager
+            insurance_wager = wager_this_hand / 2
+            self.balance -= insurance_wager
+            print("Your balance is now:", self.balance)
+            pot.insurance_bet_balance += insurance_wager
+            print("The insurance pot this round is now:", pot.insurance_bet_balance)
+            self.insurance_wager += insurance_wager
+            sleep(2)
+            return wager
+
 
 
     def compute_score(self):
@@ -167,6 +188,7 @@ class Player:
         int: returns an integer value for the current total of the cards held in the hand.
     
         """
+
         values = []
         self.score = 0
         for i in self.hand:
@@ -193,6 +215,7 @@ class Player:
         print(f"{self.name}\'s score is: {self.score}")
         
     def __str__(self):
+        
         return self.name
 
 
@@ -275,13 +298,30 @@ class Dealer(Player):
         
         """
         
-        dealer_score = dealer.compute_score()
-        dealer_hidden_card_val = cards.get(dealer.hand[-1])
+        dealer_score = self.compute_score()
+        dealer_hidden_card_val = cards.get(self.hand[-1])
         dealer_hidden_score = dealer_score - dealer_hidden_card_val
         print(f"{self.name}\'s score is: {dealer_hidden_score} + ???")
 
 
 
+    def up_card_is_ace(self):
+
+        """
+
+        Returns true if the dealer's up card is an ace, triggering choice for the player on whether to take an insurance bet.
+
+        """
+
+        first_card = self.hand[0]
+        substring = "Ace"
+        if substring in first_card:
+            return True
+        else:
+            return False
+
+
+# Initializing class variables to play game.
 gambler = Player('Connor')
 dealer = Dealer('Dealer')
 pot = Pot('Casino')
@@ -413,7 +453,10 @@ def dealer_play():
     while dealer.score < 17:
         dealer.dealer_draw()
         sleep(2)
-    if dealer.score > 21:
+    if dealer.score == 21 and len(dealer.hand) == 2:
+        print(f"{dealer.name} has a blackjack!")
+        sleep(2)
+    elif dealer.score > 21:
         print(f"{dealer.name} is bust!")
         sleep(2)
     elif dealer.score >= 17 and dealer.score <= 21:
@@ -422,6 +465,56 @@ def dealer_play():
     else:
         pass
 
+
+
+def place_insurance():
+
+    """
+
+    Allows the player the option to take an insurance bet against the house having a blackjack if the dealer's up card is an Ace.
+
+    """
+
+    if gambler.balance >= gambler.wager_this_hand / 2:
+        while True:
+                print("Dealer has an ace. Would you like to take an insurance bet?")
+                insurance_bet = input("Place Insurance Bet yes/no: ").upper()
+                if insurance_bet not in ["YES", "NO"]: 
+                    print("Invalid input")
+                    continue
+                elif insurance_bet == 'NO':
+                    break
+                else:
+                    gambler.place_wager("insurance")
+    else:
+        print("Dealer has an ace. However, you do not have sufficient remaining balance to make an insurance bet")
+
+def settle_insurance():
+
+    """
+
+    Settles insurance bets if any have been placed.
+
+    """
+
+    if gambler.insurance_wager > 0:
+        if dealer.score == 21 and len(dealer.hand) == 2:
+            # Winning insurance bet where dealer has blackjack
+            dealer.balance -= gambler.insurance_wager * 2
+            pot.insurance_bet_balance += gambler.insurance_wager * 2
+            gambler.balance += pot.insurance_bet_balance
+            pot.insurance_bet_balance = 0
+            print(f"{dealer.name} had blackjack. {gambler.name} wins their insurance bet, paid out at 2/1 odds.")
+            print(f"{gambler.name}\'s balance is now:", gambler.balance)
+            print(f"The house balance is now {dealer.balance}")
+        else:
+            # Losing insurance bet where dealer does not have blackjack
+            dealer.balance += gambler.insurance_wager
+            print(f"Dealer does not have blackjack. {gambler.name} loses their insurance bet this round.")
+            print(f"{gambler.name} lost {gambler.insurance_wager} on this insurance bet.")
+            print(f"The house balance is now {dealer.balance}")
+    else:
+        print("No insurance bets this hand")
 
 
 def basic_victory():
@@ -455,7 +548,6 @@ def basic_loss():
     print(f"{gambler.name} lost {pot.balance} on this hand.")
     print(f"{gambler.name}\'s balance is now {gambler.balance}")
     print(f"The house balance is now {dealer.balance}")
-
 
 
 
@@ -545,6 +637,8 @@ def endgame():
     else:
         print(f"Your final score is {gambler.score}. Dealer's final score is {dealer.score}.")
         sleep(2)
+        settle_insurance()
+        sleep(2)
 
         if gambler.score == 21 and dealer.score != 21 and len(gambler.hand) == 2:
             result = "blackjack"
@@ -588,13 +682,17 @@ def blackjack():
             create_deck()
             print("The deck is running low on cards. The dealer introduces a new set of 52.")
             sleep(2)
-        gambler.place_wager()
+        gambler.place_wager("opening")
         deal()
         gambler.show_hand()
         gambler.compute_score()
         gambler.show_score()
         dealer.show_partial_hand()
         dealer.compute_partial_score()
+        if dealer.up_card_is_ace() == True:
+            place_insurance()
+        else:
+            pass
         stick_or_twist()
         sleep(2)
         if surrendered == False:
