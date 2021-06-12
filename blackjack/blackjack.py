@@ -241,10 +241,11 @@ class Player:
 
         """
 
-        self.balance -= pot.balance
+        self.balance -= self.wager_this_hand
         print(f"{self.name} is confident in their hand and opts to double down on the bet!")
-        print("Additional Wager Amount:", pot.balance)
+        print("Additional Wager Amount:", self.wager_this_hand)
         print("Your balance is now:", self.balance)
+        self.wager_this_hand += self.wager_this_hand
         pot.double_down()
         print("The pot this round is now:", pot.balance)
         sleep(2)
@@ -321,6 +322,7 @@ class Dealer(Player):
             return False
 
 
+
 # Initializing class variables to play game.
 gambler = Player('Connor')
 dealer = Dealer('Dealer')
@@ -356,6 +358,7 @@ def create_deck():
     global deck
     deck = list(cards.keys())
     random.shuffle(deck)
+
 
 
 def deal():
@@ -488,6 +491,8 @@ def place_insurance():
                     gambler.place_wager("insurance")
     else:
         print("Dealer has an ace. However, you do not have sufficient remaining balance to make an insurance bet")
+
+
 
 def settle_insurance():
 
