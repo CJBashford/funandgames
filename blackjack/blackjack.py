@@ -28,6 +28,7 @@ class Pot:
         self.name = name
         self.balance = 0
         self.insurance_bet_balance = 0
+        self.split_wager_balance = 0
 
     def empty_pot(self):
 
@@ -39,6 +40,7 @@ class Pot:
 
         self.balance = 0
         self.insurance_bet_balance = 0
+        self.split_wager_balance = 0
 
 
     def double_down(self):
@@ -53,9 +55,7 @@ class Pot:
 
 
 
-class Player:
-    
-
+class Player:    
 
     def __init__(self, name):
         self.name = name
@@ -64,7 +64,10 @@ class Player:
         self.score = 0
         self.opening_wager = 0
         self.insurance_wager = 0
+        self.split_wager = 0
         self.round_winnings = 0
+        self.has_card_split = False
+        self.surrendered = False
     
 
 
@@ -80,7 +83,10 @@ class Player:
         self.score = 0
         self.opening_wager = 0
         self.insurance_wager = 0
+        self.split_wager = 0
         self.round_winnings = 0
+        self.has_card_split = False
+        self.surrendered = False
     
 
 
@@ -179,9 +185,21 @@ class Player:
             sleep(2)
             return insurance_wager
 
+        elif wager_type == "split":
+            split_wager = self.opening_wager
+            self.balance -= split_wager
+            print(f"Your balance is now: £{self.balance}")
+            pot.split_wager_balance += split_wager
+            print(f"The split wager pot this round is now: £{pot.split_wager_balance}")
+            self.split_wager += split_wager
+            sleep(2)
+            return split_wager
+
+        else:
+            pass
 
 
-    def compute_score(self):
+    def compute_score(self, hand):
         
         """
         
@@ -194,28 +212,28 @@ class Player:
 
         values = []
         self.score = 0
-        for i in self.hand:
+        for i in hand:
             val = cards.get(i)
             values.append(val)
         for j in values:
             self.score += j
         substring = "Ace"
-        ace_in_hand = any(substring in string for string in self.hand)
+        ace_in_hand = any(substring in string for string in hand)
         if self.score > 21 and ace_in_hand:
             self.score -= 10
         return self.score
     
 
 
-    def show_score(self):
+    def show_score(self, hand):
         
         """
         
         Shows a player's current score.
         
         """
-        
-        print(f"{self.name}\'s score is: {self.score}")
+        hand_score = self.compute_score(hand)
+        print(f"{self.name}\'s score is: {hand_score}")
     
 
 
@@ -233,8 +251,7 @@ class Player:
 
         """
 
-        global surrendered
-        surrendered = True
+        self.surrendered = True
 
 
 
@@ -255,9 +272,28 @@ class Player:
         print(f"The pot this round is now: £{pot.balance}")
         sleep(2)
         self.draw_card()
-        self.compute_score()
-        self.show_score()
+        self.compute_score(self.hand)
+        self.show_score(self.hand)
 
+
+
+    def can_split(self):
+
+        """
+
+        Evaluates to true or false based on whether the player can split based on the two cards they are initially dealt having the same value.
+        Player is allowed to split so long as pip/face value is the same, not limited by rank being the same.
+
+        """
+
+        values = []
+        for i in self.hand:
+            val = cards.get(i)
+            values.append(val)
+        if values[0] == values[1]:
+            return True
+        else:
+            return False
 
 
 class Dealer(Player):
@@ -274,6 +310,7 @@ class Dealer(Player):
         self.round_payouts = 0
 
 
+
     def dealer_draw(self):
         
         """
@@ -284,7 +321,7 @@ class Dealer(Player):
 
         print(f"{self.name} score is less than 17. {self.name} must draw a card")
         self.draw_card()
-        self.compute_score()
+        self.compute_score(self.hand)
         print(f"{self.name}\'s score is: {self.score}")
     
 
@@ -418,8 +455,6 @@ def game_reset():
     gambler.reset()
     dealer.reset()
     pot.empty_pot()
-    global surrendered
-    surrendered = False
 
 
 
@@ -483,8 +518,8 @@ def stick_or_twist():
                 choice = input("stick or twist? ").lower()
                 while choice == "twist":
                     gambler.draw_card()
-                    gambler.compute_score()
-                    gambler.show_score()
+                    gambler.compute_score(gambler.hand)
+                    gambler.show_score(gambler.hand)
                     if gambler.score == 21:
                         print(f"{gambler.name} got a blackjack!")
                         break
@@ -495,15 +530,15 @@ def stick_or_twist():
                         choice = input("stick or twist? ")
                         if choice == "twist":
                             dealer.show_hand()
-                            dealer.show_score()
+                            dealer.show_score(dealer.hand)
                             sleep(2)
                         else:
                             break
         else:
             while choice == "twist":
                 gambler.draw_card()
-                gambler.compute_score()
-                gambler.show_score()
+                gambler.compute_score(gambler.hand)
+                gambler.show_score(gambler.hand)
                 sleep(2)
                 if gambler.score == 21 and len(gambler.hand) == 2:
                     print(f"{gambler.name} got a blackjack!")
@@ -527,7 +562,7 @@ def dealer_play():
     """
 
     dealer.show_hand()
-    dealer.show_score()
+    dealer.show_score(dealer.hand)
     sleep(2)
     while dealer.score < 17:
         dealer.dealer_draw()
@@ -565,8 +600,9 @@ def place_insurance():
                     break
                 else:
                     gambler.place_wager("insurance")
+                    break
     else:
-        print("Dealer has an ace. However, you do not have sufficient remaining balance to make an insurance bet")
+        print(f"{dealer.name} has an ace. However, you do not have sufficient remaining balance to make an insurance bet")
 
 
 
@@ -750,6 +786,47 @@ def update_scoreboard(result):
 
 
 
+def split_cards():
+
+    """
+    
+    Handles the splitting of cards if the player chooses to do so.
+
+    """
+
+    if gambler.balance > gambler.opening_wager / 2:
+        while True:
+            print(f"{gambler.name} is dealt two cards of the same value, and can choose to split the cards into two new hands.")
+            split = input("Split cards? yes/no: ").upper()
+            if split not in ["YES", "NO"]: 
+                print("Invalid input")
+                continue
+            elif split == 'NO':
+                break
+            else:
+                gambler.has_card_split = True
+                gambler.second_hand = [] # Initializing a second hand for the player when they split cards.
+                gambler.second_hand.append(gambler.hand[1])
+                gambler.hand.pop(1)
+                gambler.place_wager("split")
+                gambler.hand.append(deck[-1])
+                deck.pop()
+                gambler.second_hand.append(deck[-1])
+                deck.pop()
+                first_hand_score = gambler.compute_score(gambler.hand)
+                gambler.show_score(gambler.hand)
+                second_hand_score = gambler.compute_score(gambler.second_hand)
+                gambler.show_score(gambler.second_hand)
+
+
+
+
+
+
+    else:
+        print(f"{gambler.name} is dealt two cards of the same value. However, you do not have sufficient remaining balance to split the hand.")
+
+
 def endgame():
 
     """
@@ -819,13 +896,20 @@ def blackjack():
         gambler.show_score()
         dealer.show_partial_hand()
         dealer.compute_partial_score()
-        if dealer.up_card_is_ace() == True:
+        if gambler.can_split():
+            split_cards()
+        else:
+            pass
+        if dealer.up_card_is_ace() and not gambler.has_card_split():
             place_insurance()
         else:
             pass
-        stick_or_twist()
+        if not gambler.has_card_split():
+            stick_or_twist()
+        else:
+            pass
         sleep(2)
-        if surrendered == False:
+        if gambler.surrendered():
             dealer_play()
             endgame()
         if gambler.balance == 0:
