@@ -177,7 +177,7 @@ class Player:
             print(f"The insurance pot this round is now: £{pot.insurance_bet_balance}")
             self.insurance_wager += insurance_wager
             sleep(2)
-            return wager
+            return insurance_wager
 
 
 
@@ -378,12 +378,21 @@ class Scoreboard:
         sleep(2)
         print("***** SCOREBOARD *****")
         print("*** HAND OUTCOMES ***")
-        print(f"{gambler.name} has won {self.player_wins} hands.")
-        print(f"{dealer.name} has won {self.house_wins} hands.")
-        print(f"{self.rounds_drawn} hands have ended in a push.")
+        if self.player_wins == 1:
+            print(f"{gambler.name} has won {self.player_wins} hand.")
+        else:
+            print(f"{gambler.name} has won {self.player_wins} hands.")
+        if self.house_wins == 1:
+            print(f"{dealer.name} has won {self.house_wins} hand.")
+        else:
+            print(f"{dealer.name} has won {self.house_wins} hands.")
+        if self.rounds_drawn == 1:
+            print(f"{self.rounds_drawn} hand has ended in a push.")
+        else:
+            print(f"{self.rounds_drawn} hands have ended in a push.")
         sleep(2)
         print("*** BET OUTCOMES ***")
-        print(f"{gambler.name} has placed a total of £{self.total_player_wagers} and won a total of £{self.total_player_winnings} this session.")
+        print(f"{gambler.name} has placed wagers totalling £{self.total_player_wagers} and won a total of £{self.total_player_winnings} this session.")
         print(f"{gambler.name} has a net profit/loss of £{self.total_player_winnings - self.total_player_wagers} this session.")
         print(f"{dealer.name} has a net profit/loss of £{self.total_house_winnings - self.total_house_payouts} this session.")
 
@@ -625,7 +634,7 @@ def basic_loss():
 
     sleep(2)
     dealer.balance += pot.balance
-    dealer.round_winnings = pot.balance
+    dealer.round_winnings += pot.balance
     print(f"{gambler.name} lost £{pot.balance} on this hand.")
     print(f"{gambler.name}\'s balance is now £{gambler.balance}")
     print(f"The house balance is now £{dealer.balance}")
@@ -726,6 +735,7 @@ def update_scoreboard(result):
     scoreboard.hands_played += 1
     scoreboard.total_player_wagers += gambler.opening_wager
     scoreboard.total_player_wagers += gambler.insurance_wager
+    scoreboard.total_player_winnings += gambler.round_winnings
     scoreboard.total_house_winnings += dealer.round_winnings
     scoreboard.total_house_payouts += dealer.round_payouts
 
